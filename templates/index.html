@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepFER - Facial Emotion Recognition Engine</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">DF</div>
+      <div>
+        <h1>DeepFER</h1>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Facial Emotion Recognition Engine</div>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('webcam')">Live Webcam</button>
+      <button class="tab-btn" onclick="switchTab('image')">Image Classifier</button>
+      <button class="tab-btn" onclick="switchTab('benchmarks')">Model Benchmarks</button>
+    </div>
+
+    <div class="system-status">
+      <div class="status-badge">
+        <span class="status-dot"></span> System Ready (GPU)
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main>
+
+    <!-- MODEL SELECTION BAR -->
+    <div class="model-bar">
+      <div class="model-selector">
+        <label for="modelSelect">Active Neural Network:</label>
+        <div class="select-wrapper">
+          <select id="modelSelect" onchange="onModelChange(this.value)">
+            <option value="custom" selected>Custom Deep CNN Architecture</option>
+            <option value="resnet18">ResNet-18 Transfer Learning (Fine-Tuned)</option>
+          </select>
+        </div>
+      </div>
+      <div id="topEmotionBanner" style="font-weight: 700; font-size: 1rem; color: var(--accent-cyan);">
+        Face Detector Active
+      </div>
+    </div>
+
+    <!-- TAB 1: WEBCAM FEED -->
+    <div id="tab-webcam" class="tab-content active">
+      <div class="view-grid">
+        <!-- Video Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎥 Live Camera Stream</div>
+            <div class="badge" id="fpsBadge">0 FPS</div>
+          </div>
+
+          <div class="media-container">
+            <video id="webcamVideo" autoplay playsinline muted style="display: none;"></video>
+            <canvas id="webcamCanvas"></canvas>
+            <div class="webcam-overlay">
+              <div class="badge" id="faceCountBadge">Faces: 0</div>
+            </div>
+          </div>
+
+          <div class="camera-controls">
+            <button class="btn" id="startCamBtn" onclick="toggleWebcam()">Start Camera</button>
+          </div>
+        </div>
+
+        <!-- Emotion Probabilities Sidebar -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Emotion Probabilities</div>
+          </div>
+
+          <div class="emotion-list" id="webcamEmotionList">
+            <!-- Emotion items will be dynamically updated -->
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Angry 😠</span><span id="val-angry">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-angry" id="bar-angry"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Disgust 🤢</span><span id="val-disgust">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-disgust" id="bar-disgust"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Fear 😨</span><span id="val-fear">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-fear" id="bar-fear"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Happy 😊</span><span id="val-happy">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-happy" id="bar-happy"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Neutral 😐</span><span id="val-neutral">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-neutral" id="bar-neutral"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Sad 😢</span><span id="val-sad">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-sad" id="bar-sad"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Surprise 😲</span><span id="val-surprise">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-surprise" id="bar-surprise"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: IMAGE CLASSIFIER -->
+    <div id="tab-image" class="tab-content">
+      <div class="view-grid">
+        <!-- Upload Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🖼️ Image File Upload</div>
+          </div>
+
+          <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+            <div class="dropzone-icon">📁</div>
+            <p style="font-weight: 600; margin-bottom: 0.5rem;">Click or drag & drop image here</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Supports JPG, PNG, WEBP, BMP</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+          </div>
+
+          <div class="media-container" id="imagePreviewContainer" style="display: none; margin-top: 1rem;">
+            <img id="annotatedImagePreview" class="preview-img" alt="Prediction Result">
+          </div>
+        </div>
+
+        <!-- Emotion Results Panel -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📈 Prediction Breakdown</div>
+          </div>
+
+          <div id="imgTopEmotionCard" style="display: none; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">DETECTED EMOTION</div>
+            <div id="imgTopEmotionText" style="font-size: 1.8rem; font-weight: 800; color: var(--accent-cyan); margin-top: 0.25rem;">Happy (98.4%)</div>
+          </div>
+
+          <div class="emotion-list" id="imageEmotionList">
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Angry 😠</span><span id="img-val-angry">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-angry" id="img-bar-angry"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Disgust 🤢</span><span id="img-val-disgust">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-disgust" id="img-bar-disgust"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Fear 😨</span><span id="img-val-fear">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-fear" id="img-bar-fear"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Happy 😊</span><span id="img-val-happy">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-happy" id="img-bar-happy"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Neutral 😐</span><span id="img-val-neutral">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-neutral" id="img-bar-neutral"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Sad 😢</span><span id="img-val-sad">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-sad" id="img-bar-sad"></div></div>
+            </div>
+            <div class="emotion-item">
+              <div class="emotion-meta"><span>Surprise 😲</span><span id="img-val-surprise">0.0%</span></div>
+              <div class="bar-bg"><div class="bar-fill bar-surprise" id="img-bar-surprise"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MODEL BENCHMARKS -->
+    <div id="tab-benchmarks" class="tab-content">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">TEST ACCURACY</div>
+          <div class="metric-val" id="metricAcc">--%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">MACRO F1 SCORE</div>
+          <div class="metric-val" id="metricF1">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">WEIGHTED PRECISION</div>
+          <div class="metric-val" id="metricPrec">--%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">WEIGHTED RECALL</div>
+          <div class="metric-val" id="metricRec">--%</div>
+        </div>
+      </div>
+
+      <div class="view-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📌 Confusion Matrix Visualization</div>
+          </div>
+          <div class="media-container" style="aspect-ratio: 4/3;">
+            <img id="cmImage" src="" alt="Confusion Matrix" style="object-fit: contain;">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏆 Model Architecture Comparison</div>
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
+            <p><strong>Baseline Custom CNN:</strong> 4 Convolutional stages with BatchNorm, LeakyReLU, and Squeeze-and-Excitation dropout, designed specifically for 48x48 pixel input faces.</p>
+            <br>
+            <p><strong>ResNet-18 Transfer Learning:</strong> Pre-trained ImageNet feature extractor fine-tuned with custom classification head and class-weighted Cross-Entropy loss.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    DeepFER: Facial Emotion Recognition System • Deep Learning for Computer Vision
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

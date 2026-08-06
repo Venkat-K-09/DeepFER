@@ -1,0 +1,16 @@
+.venv
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+dataset/
+models/evaluation_*.json
+models/confusion_matrix_*.png
+models/curves_*.png
+Dockerfile
+docker-compose.yml
+Procfile
+README.md

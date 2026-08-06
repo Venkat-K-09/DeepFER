@@ -1,0 +1,10 @@
+torch>=2.0.0
+torchvision>=0.15.0
+numpy
+scikit-learn
+matplotlib
+seaborn
+opencv-python-headless
+pillow
+flask
+gunicorn
