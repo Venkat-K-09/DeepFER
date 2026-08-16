@@ -149,8 +149,11 @@ def get_metrics():
         eval_path = f'models/evaluation_{key}.json'
         if os.path.exists(eval_path):
             with open(eval_path, 'r') as f:
-                metrics_data[key] = json.load(f)
+                data = json.load(f)
+                mapped_key = 'custom_cnn' if key == 'custom_cnn_eval' else key
+                metrics_data[mapped_key] = data
     return jsonify(metrics_data)
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
